@@ -1,0 +1,43 @@
+<div class="container my-5">
+  <div class="card shadow-sm">
+    <!-- Topo com ícone de carrinho -->
+    <div class="card-header bg-success text-white">
+      <i class="bi bi-cart me-2"></i>Lista de Produtos
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-striped table-hover mb-0">
+        <thead class="bg-success text-white">
+          <tr>
+            <th>Nome</th>
+            <th>Preço</th>
+            <th>Tipo</th>
+            <th class="text-center">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let product of products">
+            <td>{{ product.nome }}</td>
+            <td>{{product.preco / 100 | currency:'BRL':'symbol':'1.2-2'}}</td>
+            <td>{{ product.checkbox_group }}</td>
+            <td class="text-center d-flex justify-content-center flex-row gap-1">
+              <button class="btn btn-primary btn-sm mr-2" (click)="editProduct(product)">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn btn-danger btn-sm" (click)="deleteProduct(product.id)">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+          <!-- Linha botão criar novo -->
+          <tr>
+            <td colspan="4" class="text-center py-3">
+              <button (click)="createProduct()" class="btn button_create btn-primary btn-lg">
+                <strong class="mais">+</strong>Criar Novo Produto
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

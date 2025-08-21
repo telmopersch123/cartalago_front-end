@@ -1,0 +1,96 @@
+<body>
+  <div>
+    <button type="button" class="btn btn-primary d-flex gap-1 justify-content-center align-content-center"
+      [routerLink]="['/']">
+      <i class="bi bi-arrow-return-left"></i>Voltar
+    </button>
+  </div>
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <!-- Nome -->
+
+    <div class="form-group">
+      <label [ngClass]="{ 'text-danger': isInvalid('nome') }" for="nome">Nome</label>
+      <input [ngClass]="{ 'is-invalid': isInvalid('nome') }" formControlName="nome" style="  text-align: center;"
+        type="text" id="nome" name="nome">
+      <app-error-mensage *ngIf="isInvalid('nome')" [campo]="'Nome'" [message]="form.get('nome')"></app-error-mensage>
+    </div>
+
+    <!-- Descrição -->
+    <div class="form-group">
+      <label [ngClass]="{ 'text-danger': isInvalid('descricao') }" for="descricao">Descrição</label>
+      <textarea [ngClass]="{ 'is-invalid': isInvalid('descricao') }" formControlName="descricao" id="descricao"
+        name="descricao" rows="4"></textarea>
+      <app-error-mensage *ngIf="isInvalid('descricao')" [campo]="'Descrição'"
+        [message]="form.get('descricao')"></app-error-mensage>
+    </div>
+
+    <!-- Preço -->
+    <div class="form-group">
+      <label [ngClass]="{ 'text-danger': isInvalid('preco') }" for="preco">Preço</label>
+      <input [ngClass]="{ 'is-invalid': isInvalid('preco') }" (input)="onPrecoChange($event, form.get('preco'))"
+        formControlName="preco" type="text" id="preco" name="preco" placeholder="R$ 0,00">
+      <app-error-mensage *ngIf="isInvalid('preco')" [campo]="'Preço'" [message]="form.get('preco')"></app-error-mensage>
+    </div>
+
+
+
+    <!-- Checkboxes -->
+    <div [ngClass]="{'div-error' : isInvalid('checkbox_group')}" class="form-group checkbox-group"
+      formArrayName="checkbox_group">
+      <fieldset>
+        <legend>Tipo do produto</legend>
+        <label *ngFor="let item of opcoesList; let i = index">
+          <input type="checkbox" [formControlName]="i">
+          {{ item }}
+        </label>
+      </fieldset>
+      <div>
+        <app-error-mensage *ngIf="isInvalid('checkbox_group')" [campo]="''"
+          [message]="form.get('checkbox_group')"></app-error-mensage>
+      </div>
+    </div>
+
+
+    <!-- Rádio: Produto Promocional -->
+    <div class="form-group">
+      <fieldset>
+        <legend>O produto é promocional?</legend>
+        <label><input [checked]="precoPromocionalAtivo" (change)="toggle(true)" type="radio" name="radio_group"
+            value="sim"> Sim</label>
+        <div *ngIf="precoPromocionalAtivo" class="mb-2">
+          <input [ngClass]="{ 'is-invalid': isInvalid('precoPromocional') }"
+            (input)="onPrecoChange($event,  form.get('precoPromocional'))" type="text"
+            formControlName="precoPromocional" placeholder="R$ 0,00" id="precoPromocional">
+          <app-error-mensage *ngIf="isInvalid('precoPromocional')" [campo]="'Preço Promocional'"
+            [message]="form.get('precoPromocional')"></app-error-mensage>
+        </div>
+        <label><input (change)="toggle(false)" type="radio" name="radio_group" checked value="nao"> Não</label>
+      </fieldset>
+    </div>
+
+    <!-- Upload de imagem -->
+    <div class="form-group file-upload-wrapper">
+      <div class="file-upload">
+        <label class="file-btn">
+          <span class="btn-text">Escolher arquivo</span>
+          <input name="file_image" type="file" hidden (change)="onFileSelected($event)">
+        </label>
+        <span class="file-name">{{ fileName ? fileName : 'Nenhum arquivo selecionado' }}</span>
+      </div>
+      <div class="preview-wrapper" *ngIf="previewUrl">
+        <img [src]="previewUrl" alt="Pré-visualização" class="preview-image">
+      </div>
+      <div>
+        <app-error-mensage *ngIf="isInvalid('file_image')" [campo]="'Imagem'"
+          [message]="form.get('file_image')"></app-error-mensage>
+      </div>
+    </div>
+
+
+
+    <!-- Botão -->
+    <div class="form-group">
+      <button type="submit">{{productToEdit ? 'Atualizar' : 'Criar'}}</button>
+    </div>
+  </form>
+</body>
