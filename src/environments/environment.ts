@@ -1,4 +1,4 @@
 export const environment = {
   production: false,
-  API_URL: '', // deixamos vazio, vai ser preenchido no build
+  apiUrl: '', // deixamos vazio, vai ser preenchido no build
 };
