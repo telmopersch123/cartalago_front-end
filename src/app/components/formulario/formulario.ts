@@ -71,6 +71,11 @@ export class FormularioComponent implements OnInit, OnDestroy, FormValidator {
         this.precoPromocionalAtivo = Boolean(
           product?.precoPromocional || false,
         );
+
+        if (product?.file_image) {
+          this.previewUrl = product.file_image;
+          this.fileName = product.file_image.split('/').pop() || '';
+        }
       },
       this.route.paramMap,
     );
