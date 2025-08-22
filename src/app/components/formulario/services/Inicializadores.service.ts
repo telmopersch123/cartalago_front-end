@@ -148,7 +148,7 @@ export class InicializadoresService {
 
     if (product.file_image) {
       setFileName(product.file_image);
-      setPreviewUrl(`${environment.apiUrl}/Uploads/${product.file_image}`);
+      setPreviewUrl(`${environment.apiUrl}/uploads/${product.file_image}`);
     }
 
     return !!product.precoPromocional;
