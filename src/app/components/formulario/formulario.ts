@@ -1,5 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  OnDestroy,
+  OnInit,
+  Renderer2,
+} from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -9,7 +15,7 @@ import {
 
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 
-import { Subject, takeUntil } from 'rxjs';
+import { BehaviorSubject, Subject, takeUntil } from 'rxjs';
 import { FormValidator } from '../../Guards/Protetor.guard';
 import { Product } from '../../models/Product';
 import { ProductService } from '../../services/ProductService.service';
@@ -39,8 +45,12 @@ export class FormularioComponent implements OnInit, OnDestroy, FormValidator {
   form: FormGroup = new FormGroup({});
   fileName: string = '';
   previewUrl: string | ArrayBuffer | null | undefined = null;
-  precoPromocionalAtivo: boolean = false;
+  precoPromocionalAtivo$ = new BehaviorSubject<boolean>(false);
   opcoesList: string[] = [];
+  isLoading: boolean = false;
+  isLoadingImage: boolean = false;
+  products: Product[] = [];
+  jaExiste: boolean = false;
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -50,6 +60,8 @@ export class FormularioComponent implements OnInit, OnDestroy, FormValidator {
     private productService: ProductService,
     private submitService: SubmitService,
     private inicializadoresService: InicializadoresService,
+    private renderer: Renderer2,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
@@ -58,7 +70,11 @@ export class FormularioComponent implements OnInit, OnDestroy, FormValidator {
       this.opcoesList,
     );
 
-    this.inicializadoresService.FormSubscription(this.form, this.destroy$);
+    this.inicializadoresService.FormSubscription(
+      this.form,
+      this.destroy$,
+      this.precoPromocionalAtivo$,
+    );
 
     this.inicializadoresService.InitPopular(
       this.destroy$,
@@ -68,14 +84,16 @@ export class FormularioComponent implements OnInit, OnDestroy, FormValidator {
       (url) => (this.previewUrl = url),
       (product) => {
         this.productToEdit = product;
-        this.precoPromocionalAtivo = Boolean(
-          product?.precoPromocional || false,
+        this.precoPromocionalAtivo$.next(
+          Boolean(product?.precoPromocional || false),
         );
 
         if (product?.file_image) {
+          this.isLoadingImage = true;
           this.previewUrl = product.file_image;
           this.fileName = product.file_image.split('/').pop() || '';
         }
+        this.isLoading = false;
       },
       this.route.paramMap,
     );
@@ -84,6 +102,7 @@ export class FormularioComponent implements OnInit, OnDestroy, FormValidator {
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
+    this.renderer.removeStyle(document.body, 'overflow');
   }
 
   submit() {
@@ -92,23 +111,41 @@ export class FormularioComponent implements OnInit, OnDestroy, FormValidator {
       return;
     }
 
-    const formData = this.submitService.createFormData(
-      this.form,
-      this.opcoesList,
-      this.selectedFile,
-      this.precoPromocionalAtivo,
-    );
+    this.isLoading = true;
 
-    this.submitService
-      .saveProduct(formData, this.productToEdit)
+    this.productService
+      .getProducts()
       .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => {
-          this.isSubmitted = true;
-        },
-        error: () => {
+      .subscribe((products) => {
+        this.jaExiste = products.some(
+          (p) => p.nome === this.form.get('nome')?.value,
+        );
+        if (this.jaExiste && !this.productToEdit) {
+          this.isLoading = false;
           this.isSubmitted = false;
-        },
+          return;
+        }
+
+        const formData = this.submitService.createFormData(
+          this.form,
+          this.opcoesList,
+          this.selectedFile,
+          this.precoPromocionalAtivo$.getValue(),
+        );
+
+        this.submitService
+          .saveProduct(formData, this.productToEdit)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
+            next: () => {
+              this.isSubmitted = true;
+              this.isLoading = false;
+            },
+            error: () => {
+              this.isLoading = false;
+              this.isSubmitted = false;
+            },
+          });
       });
   }
 
@@ -129,7 +166,7 @@ export class FormularioComponent implements OnInit, OnDestroy, FormValidator {
 
   toggle(isPromocao: boolean) {
     //Código responsável por ativar ou desativar o preço promocional
-    this.precoPromocionalAtivo = isPromocao;
+    this.precoPromocionalAtivo$.next(isPromocao);
     // CurrencyValidators.togglePromocao(this.precoPromocionalAtivo, this.form);
   }
 
@@ -146,6 +183,13 @@ export class FormularioComponent implements OnInit, OnDestroy, FormValidator {
       reader.onload = (e) => {
         this.previewUrl = e.target?.result;
       };
+      reader.onerror = () => {
+        this.previewUrl = null;
+        this.fileName = '';
+        this.form.get('file_image')?.setValue(null);
+        this.selectedFile = null;
+      };
+
       reader.readAsDataURL(file);
     } else {
       this.form.get('file_image')?.setValue(null);
@@ -153,7 +197,21 @@ export class FormularioComponent implements OnInit, OnDestroy, FormValidator {
       this.previewUrl = null;
     }
   }
+  // quando a imagem terminar de carregar
+  onImageLoad() {
+    this.isLoadingImage = false;
+    this.cdr.detectChanges();
+  }
 
+  // se der erro no carregamento
+  onImageError() {
+    this.isLoadingImage = false;
+    this.previewUrl = null;
+    this.fileName = '';
+    this.selectedFile = null;
+    this.form.get('file_image')?.setValue(null);
+    this.cdr.detectChanges();
+  }
   hasValidator(): boolean {
     //Código responsável por verificar se o formulário foi alterado
     return this.form.dirty;

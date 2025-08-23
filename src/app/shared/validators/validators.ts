@@ -37,6 +37,36 @@ export class CurrencyValidators {
     };
   }
 
+  static atualizarErroPrecoPromocional(form: FormGroup): ValidatorFn {
+    // Validação do campo preço promocional e preço normal, se preço promoção e mais alto, retorna erro
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (!control.value) {
+        return null;
+      }
+
+      const precoNormal = FormatNumber.parsePrice(form.get('preco')?.value);
+      const precoPromo = FormatNumber.parsePrice(control.value);
+
+      if (precoPromo >= precoNormal) {
+        return { menorQueMinimo: { valorMaximo: precoNormal } };
+      }
+
+      return null;
+    };
+  }
+
+  static valorMaiorQueZero(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (!control.value) return null;
+      let valor = control.value;
+      valor = valor.replace('R$', '').trim().replace(/\./g, '');
+      valor = valor.replace(',', '.');
+      let numericValue = parseFloat(valor);
+      if (isNaN(numericValue)) return null;
+      return numericValue > 0 ? null : { valorZero: true };
+    };
+  }
+
   static MinSelectedCheckboxes(min = 2): ValidatorFn {
     // validação de checkbox de mínimo selcionados
     return (formArray: AbstractControl): ValidationErrors | null => {
@@ -71,22 +101,4 @@ export class CurrencyValidators {
 
   //   precoControl.updateValueAndValidity();
   // }
-
-  static atualizarErroPrecoPromocional(form: FormGroup): ValidatorFn {
-    // Validação do campo preço promocional e preço normal, se preço promoção e mais alto, retorna erro
-    return (control: AbstractControl): ValidationErrors | null => {
-      if (!control.value) {
-        return null;
-      }
-
-      const precoNormal = FormatNumber.parsePrice(form.get('preco')?.value);
-      const precoPromo = FormatNumber.parsePrice(control.value);
-
-      if (precoPromo >= precoNormal) {
-        return { menorQueMinimo: { valorMaximo: precoNormal } };
-      }
-
-      return null;
-    };
-  }
 }

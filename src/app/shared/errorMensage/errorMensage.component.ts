@@ -46,6 +46,9 @@ export class ErrorMensageComponent {
       case this.message.hasError('menorQueMinimo'):
         return `deve ser menor que o preço normal (máx: ${FormatNumber.formatNumber(this.message.errors?.menorQueMinimo.valorMaximo)})`;
 
+      case this.message.hasError('valorZero'):
+        return 'não pode ser R$ 0,00';
+
       default:
         return '';
     }

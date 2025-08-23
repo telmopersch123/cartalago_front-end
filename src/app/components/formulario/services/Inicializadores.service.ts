@@ -58,29 +58,56 @@ export class InicializadoresService {
         opcoesList.map(() => new FormControl(false)),
         CurrencyValidators.MinSelectedCheckboxes(2),
       ),
-      precoPromocional: ['', []],
+      precoPromocional: [''],
       file_image: ['', Validators.required],
     });
   }
 
-  FormSubscription(form: FormGroup, destroy$: Subject<void>): void {
+  FormSubscription(
+    form: FormGroup,
+    destroy$: Subject<void>,
+    precoPromocionalAtivo$: Observable<boolean>,
+  ): void {
     const precoControl = form.get('preco');
-    const precoPromocionalControl = form.get('precoPromocional');
+    let precoPromocionalControl = form.get('precoPromocional');
 
-    precoControl?.valueChanges
-      .pipe(takeUntil(destroy$))
-      .subscribe(() => this.atualizarValidator(precoPromocionalControl, form));
+    let ativoAtual = false;
+
+    precoPromocionalAtivo$.pipe(takeUntil(destroy$)).subscribe((ativo) => {
+      ativoAtual = ativo;
+      if (!ativo) {
+        precoPromocionalControl?.clearValidators();
+        precoPromocionalControl?.reset();
+        precoPromocionalControl?.updateValueAndValidity({ emitEvent: false });
+      } else {
+        this.atualizarValidator(precoPromocionalControl, form);
+      }
+    });
+
+    // Subscribe no precoControl
+    precoControl?.valueChanges.pipe(takeUntil(destroy$)).subscribe(() => {
+      if (ativoAtual) {
+        this.atualizarValidator(precoPromocionalControl, form);
+      }
+    });
+
+    // Subscribe no precoPromocionalControl
     precoPromocionalControl?.valueChanges
       .pipe(takeUntil(destroy$))
-      .subscribe(() => this.atualizarValidator(precoPromocionalControl, form));
+      .subscribe(() => {
+        if (ativoAtual) {
+          this.atualizarValidator(precoPromocionalControl, form);
+        }
+      });
   }
 
   atualizarValidator(
     precoPromocionalControl: AbstractControl | null,
     form: FormGroup,
   ) {
-    //Código responsável por atualizar o validator do preço promocional
     precoPromocionalControl?.setValidators([
+      Validators.required,
+      CurrencyValidators.valorMaiorQueZero(),
       CurrencyValidators.atualizarErroPrecoPromocional(form),
     ]);
     precoPromocionalControl?.updateValueAndValidity({ emitEvent: false });
